@@ -53,17 +53,12 @@ kubectl get pods --all-namespaces -o jsonpath="{..image}" | tr -s '[[:space:]]' 
 
 ### Confirming the Foreign Workload
 
-__Blue__ sends a message back to the developers asking for confirmation of the suspicious `bitcoinero` image, and they all agree they don't know who created the `deployment`. They also mention that someone accidentally deployed a `nodePort` for the production ops dashboard, and ask if __Blue__ can delete it for them. __Blue__ makes a mental note about the `nodePort` and then <a href="https://console.cloud.google.com/logs/viewer" target="_blank">opens a browser to the cluster log system</a>, making sure to go to the Legacy Logs Viewer.
+__Blue__ sends a message back to the developers asking for confirmation of the suspicious `bitcoinero` image, and they all agree they don't know who created the `deployment`. They also mention that someone accidentally deployed a `LoadBalancer` for the dev ops dashboard, and ask if __Blue__ can delete it for them. __Blue__ makes a mental note about the `LoadBalancer` and then looks at the AKS cluster in the Azure Portal.
 
-Once there, __Blue__ clicks on the small "down arrow" on the far right of the "Filter by label or text" search bar, selects "Convert to advanced filter", and puts the following query into the search filter area:
 
-```console
-resource.type="k8s_cluster"
-protoPayload.authorizationInfo.permission="io.k8s.apps.v1.deployments.create"
-```
+![Stackdriver Log Filter of Default Service Account](img/event-dev.png)
 
-![Stackdriver Log Filter of Default Service Account](img/sd-prd.png)
-
+ISSUE: How to tell in portal it was default SA
 __Blue__ sees that the `default` Kubernetes `serviceaccount` was the creator of the `bitcoinero` `deployment`.
 
 Back in the Cloud Shell terminal, __Blue__ runs the following to list the `pods` running with the `default` `serviceaccount` in the `prd` `namespace`:
@@ -84,7 +79,7 @@ kubectl get deployments -n prd
 kubectl delete deployment bitcoinero -n prd
 ```
 
-They also keep their promise, and delete the `nodePort`:
+They also keep their promise, and delete the `LoadBalancer`:
 ```console
 kubectl get services -n prd
 ```
@@ -98,23 +93,17 @@ kubectl delete service dashboard -n prd
 It's now very clear to __Blue__ that without additional information, it's difficult to determine exactly _who_ or _what_ created that `bitcoinero` deployment.  Was it code?  Was it a human?  __Blue__ suspects it was one of the engineers on the team, but there's not much they can do without proof.  Remembering that this `cluster` doesn't have any runtime behavior monitoring and detection software installed, __Blue__ decides to install <a href="https://falco.org" target="_blank">Sysdig's Falco</a> using an all-in-one manifest from a prominent blogger.
 
 ```console
-kubectl apply -f https://raw.githubusercontent.com/securekubernetes/securekubernetes/master/manifests/security.yml
+helm repo add falcosecurity https://falcosecurity.github.io/charts
+helm repo update
+helm install falco falcosecurity/falco \
+    --create-namespace \
+    --namespace falco
 ```
 
 Just to make sure it's working, __Blue__ runs the following command to get the logs from the deployed `Falco` `pod(s)`:
 
 ```console
-kubectl logs -n falco $(kubectl get pod -n falco -l app=falco -o=name) -f
-```
-
-### Ensuring Security Log Flow
-
-Going back to the <a href="https://console.cloud.google.com/logs/viewer" target="_blank">logging system</a>, __Blue__ enters another log filter using the "advanced filter" with the following query to confirm it's receiving all the logs coming from the `Falco` `deployment`:
-
-```console
-resource.type=k8s_container
-resource.labels.namespace_name="falco"
-resource.labels.container_name="falco"
+kubectl logs -n falco $(kubectl get pod -n falco -l app.kubernetes.io/name=falco -o=name) -f
 ```
 
 ### Reviewing the Falco Rules:
@@ -122,13 +111,7 @@ resource.labels.container_name="falco"
 Falco Kubernetes Rules:
 
 ```console
-kubectl get configmaps -n falco falco-config -o json | jq -r '.data."falco_rules.yaml"' | grep rule:
-```
-
-Kubernetes Audit Rules (Not applicable on GKE):
-
-```console
-kubectl get configmaps -n falco falco-config -o json | jq -r '.data."k8s_audit_rules.yaml"' | grep rule:
+kubectl get configmaps -n falco falco -o json | jq -r '.data."falco.yaml"'
 ```
 
 ### Giving the "All Clear"

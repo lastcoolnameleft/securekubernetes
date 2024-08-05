@@ -1,9 +1,6 @@
-# KubeCon NA 2019 CTF
+# AKS CTF
 
-Welcome to the Attacking and Defending Kubernetes Clusters: A Guided Tour Walkthrough Guide, as [presented at KubeCon NA 2019](https://www.youtube.com/watch?v=UdMFTdeAL1s). We'll help you create your own Kubernetes environment so you can follow along as we take on the role of two attacking personas looking to make some money and one defending persona working hard to keep the cluster safe and healthy.
-
-!!! note "Use the Copy to Clipboard Feature"
-Each terminal command block in this guide has a double-square icon on the far right side which automatically copies the content to your paste buffer to make things easier to follow along.
+Welcome to the Attacking and Defending Azure Kubernetes Service Clusters.  This is inspired by [A Guided Tour Walkthrough Guide](https://securekubernetes.com/), as [presented at KubeCon NA 2019](https://www.youtube.com/watch?v=UdMFTdeAL1s). We'll help you create your own Kubernetes environment so you can follow along as we take on the role of two attacking personas looking to make some money and one defending persona working hard to keep the cluster safe and healthy.
 
 ## Getting Started
 

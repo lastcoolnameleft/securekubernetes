@@ -5,5 +5,5 @@ Congrats! Remember to delete your project so it won't keep running and accruing 
 You can delete it through the web interface, or with the following gcloud command:
 
 ```console
-gcloud projects delete "${DEVSHELL_PROJECT_ID}"
+az group delete -n $RESOURCE_GROUP
 ```
