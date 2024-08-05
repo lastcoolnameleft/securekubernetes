@@ -1,6 +1,6 @@
-site_name: KubeCon NA 2019 Tutorial Guide
-repo_name: 'securekubernetes/securekubernetes'
-repo_url: 'https://github.com/securekubernetes/securekubernetes'
+site_name: AKS Capture the Flag
+repo_name: 'lastcoolnameleft/securekubernetes'
+repo_url: 'https://github.com/lastcoolnameleft/securekubernetes'
 dev_addr: 0.0.0.0:8080
 
 theme:
@@ -60,4 +60,4 @@ markdown_extensions:
 extra:
   social:
     - icon: fontawesome/brands/github-alt
-      link: https://github.com/securekubernetes/securekubernetes
+      link: https://github.com/lastcoolnameleft/securekubernetes

@@ -1,4 +1,4 @@
-# KubeCon NA 2019 CTF Guide
+# AKS Capture the Flag
 
 ## Viewing this Guide
 
