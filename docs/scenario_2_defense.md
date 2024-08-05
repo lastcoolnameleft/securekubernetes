@@ -45,6 +45,23 @@ So far, everything looks normal. What gives?
 
 Hold on. We installed `falco` last time and it is throwing us alerts in StackDriver.
 
+# ISSUE How to do in Log Analytics?
+
+Let's look the Events tile in the AKS resource.
+
+![opa admission gatekeeper](img/r00t-event.png)
+
+Huh. This is odd. An unrecognized container, but no other information to go off of? 
+
+Let's look at Azure Defender for Cloud
+
+![opa admission gatekeeper](img/r00t-security-alert.png)
+
+We can see that a privileged container was launched with the same name.
+
+---
+ISSUE: THIS IS THE OLD CONTENT. It's got more details, but not sure of equivalent CLI/portal steps
+
 In a new <a href="https://console.cloud.google.com/logs/viewer" target="_blank">StackDriver window</a>, let's run the query:
 
 ```console
@@ -55,7 +72,6 @@ jsonPayload.rule="Launch Privileged Container" OR jsonPayload.rule="Terminal she
 
 We're looking for `container` logs from `falco` where triggered rules are privileged containers or interactive shells.
 
-Huh. This is odd. A privileged `alpine` container, but no other information to go off of? What can Kubernetes cluster logs tell us about this `alpine` container?
 
 In a new <a href="https://console.cloud.google.com/logs/viewer" target="_blank">StackDriver window</a>, let's run this query:
 
@@ -145,12 +161,21 @@ So, we should set two policies:
 First, let's apply Gatekeeper itself:
 
 ```console
-kubectl apply -f https://raw.githubusercontent.com/securekubernetes/securekubernetes/master/manifests/security2.yaml
+--enable-addons
+az aks enable-addons --addons azure-policy --name $AKS_NAME --resource-group $RESOURCE_GROUP
+
+# OLD COMMAND
+# kubectl apply -f https://raw.githubusercontent.com/securekubernetes/securekubernetes/master/manifests/security2.yaml
 ```
 
 Second, let's apply the policies. If you receive an error about `no matches for kind... in version ...`, this means Gatekeeper has not kicked into gear yet. Wait a few seconds then re-apply policies:
 
 ```console
+# ISSUE: Must use Portal.  See: https://learn.microsoft.com/en-us/azure/governance/policy/concepts/policy-for-kubernetes#assign-a-policy-definition
+# ISSUE: Policies take take 20m to sync!
+# https://learn.microsoft.com/en-us/azure/aks/use-azure-policy#validate-an-azure-policy-is-running
+
+# OLD COMMAND
 kubectl apply -f https://raw.githubusercontent.com/securekubernetes/securekubernetes/master/manifests/security2-policies.yaml
 ```
 

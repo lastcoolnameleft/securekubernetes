@@ -1,7 +1,7 @@
 #! /bin/sh
 
 ### ISSUE:  What is the equivalent of this?  LB with a Public IP?  It appears to be a way to get the Public IP of the first node in the cluster
-the_ip=`kubectl get svc -n prd app -o json | jq -r '.status.loadBalancer.ingress[0].ip'`
+the_ip=`kubectl get svc -n dev app -o json | jq -r '.status.loadBalancer.ingress[0].ip'`
 
 echo "${the_ip}" | grep '^[0-9][0-9.]*[0-9]$' >> /dev/null
 if [ $? -ne 0 ]; then

@@ -2,7 +2,7 @@
 
 ## Viewing this Guide
 
-Visit [https://securekubernetes.com](https://securekubernetes.com)
+Visit [https://lastcoolnameleft.github.io/aks-ctf/](https://lastcoolnameleft.github.io/aks-ctf/)
 
 ## KubeCon Schedule Link
 

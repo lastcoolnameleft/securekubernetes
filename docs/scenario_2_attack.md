@@ -19,7 +19,9 @@
 
 ## Initial Foothold
 
-Seeing that the URL included port `31337` and that __Red__ said it was a Kubernetes `cluster`, it was likely to be exposed via a `NodePort` `service`. With this information, she has a feeling that more `services` might still be exposed to the web this way. __DarkRed__ starts with indirect enumeration, such as searching on shodan.io, and follows up with direct port scanning via `nmap`.
+# ISSUE:  Original CTF exposed a NodePort instead of a LB.  LB feels more natural, but haven't tested nmap with it and doesn't have the same 30k+ port number.
+
+Seeing that the URL included port `31337` and that __Red__ said it was a Kubernetes `cluster`, it was likely to be exposed via a `LoadBalancer` `service`. With this information, she has a feeling that more `services` might still be exposed to the web this way. __DarkRed__ starts with indirect enumeration, such as searching on shodan.io, and follows up with direct port scanning via `nmap`.
 
 To see what she'd see, from the Cloud Shell Terminal, scan the hundred ports around 31337 using a command similar to "nmap -sT -A -T4 -n -v -Pn your-ip-address-goes-here". Be absolutely sure to scan your assigned IP address.
 
@@ -33,7 +35,7 @@ Now, let's become __DarkRed__ and leverage this new access:
 
 The webshell can be found at <a href="http://your-ip:31336/webshell/" target="_blank">http://your-ip:31336/webshell/</a>, and uses your workshop credentials as before.
 
-Your Cloud Shell has a little script to help:
+Run the second attacker script to get this info:
 
 ```console
 ./attack-2-helper.sh

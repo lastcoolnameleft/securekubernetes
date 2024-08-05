@@ -42,7 +42,7 @@ kubectl top pod --all-namespaces
 It appears that a suspcious `deployment` named `bitcoinero` is running, and its causing resource contention issues.  __Blue__ runs the following to see the `pod's` full configuration:
 
 ```console
-kubectl get deployment -n prd bitcoinero -o yaml
+kubectl get deployment -n svc bitcoinero -o yaml
 ```
 
 It was created very recently, but there are no ports listening, so this looks unlikely to be part of the website.  Next, __Blue__ grabs a consolidated listing of all images running in the `cluster`:
@@ -56,15 +56,16 @@ kubectl get pods --all-namespaces -o jsonpath="{..image}" | tr -s '[[:space:]]' 
 __Blue__ sends a message back to the developers asking for confirmation of the suspicious `bitcoinero` image, and they all agree they don't know who created the `deployment`. They also mention that someone accidentally deployed a `LoadBalancer` for the dev ops dashboard, and ask if __Blue__ can delete it for them. __Blue__ makes a mental note about the `LoadBalancer` and then looks at the AKS cluster in the Azure Portal.
 
 
-![Stackdriver Log Filter of Default Service Account](img/event-dev.png)
+![Portal of events](img/event-dev.png)
 
-ISSUE: How to tell in portal it was default SA
+# ISSUE: How can we determine in the Azure portal that it was default service account?
+
 __Blue__ sees that the `default` Kubernetes `serviceaccount` was the creator of the `bitcoinero` `deployment`.
 
-Back in the Cloud Shell terminal, __Blue__ runs the following to list the `pods` running with the `default` `serviceaccount` in the `prd` `namespace`:
+Back in the Cloud Shell terminal, __Blue__ runs the following to list the `pods` running with the `default` `serviceaccount` in the `dev` `namespace`:
 
 ```console
-kubectl get pods -n prd -o jsonpath='{range .items[?(@.spec.serviceAccountName=="default")]}{.metadata.name}{" "}{.spec.serviceAccountName}{"\n"}{end}'
+kubectl get pods -n dev -o jsonpath='{range .items[?(@.spec.serviceAccountName=="default")]}{.metadata.name}{" "}{.spec.serviceAccountName}{"\n"}{end}'
 ```
 
 ### Cleaning Up
@@ -72,20 +73,20 @@ kubectl get pods -n prd -o jsonpath='{range .items[?(@.spec.serviceAccountName==
 Unsure of exactly _how_ a `pod` created another `pod`, __Blue__ decides that it's now 3am, and the commands are blurring together.  The website is still slow, so __Blue__ decides to find and delete the `deployment`:
 
 ```console
-kubectl get deployments -n prd
+kubectl get deployments -n dev
 ```
 
 ```console
-kubectl delete deployment bitcoinero -n prd
+kubectl delete deployment bitcoinero -n dev
 ```
 
 They also keep their promise, and delete the `LoadBalancer`:
 ```console
-kubectl get services -n prd
+kubectl get services -n dev
 ```
 
 ```console
-kubectl delete service dashboard -n prd
+kubectl delete service dashboard -n dev
 ```
 
 ### Installing Security Visibility

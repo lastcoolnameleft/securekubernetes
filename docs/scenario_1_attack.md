@@ -25,6 +25,8 @@ In the real world, use good judgment. Don't hurt people, don't get yourself in t
 
 __Red__ has been mining `bitcoinero` for a few months now, and it's starting to gain some value.  To capitalize on this bubble, __Red__ uses a service that sells shell access to expand the mining pool.  To find the compromised website, run the following from your Cloud Shell terminal:
 
+# ISSUE: Previous tool used NodePort instead of LB.  Validate no issues with LB
+
 ```console
 ./attack-1-helper.sh
 ```
@@ -168,7 +170,7 @@ metadata:
   labels:
     run: bitcoinero
   name: bitcoinero
-  namespace: prd
+  namespace: dev
 spec:
   replicas: 1
   revisionHistoryLimit: 2

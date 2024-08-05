@@ -15,10 +15,10 @@ K8SUSER_BASE64=$(echo -n $K8SPASSWORD | base64)
 echo
 echo "Create resource group..."
 echo
-RESOURCE_GROUP="secure-k8s"
-LOCATION="westus"
-AKS_NAME="secure-k8s"
-AKS_NODEPOOL_RG="secure-k8s-nodepool-rg"
+export RESOURCE_GROUP="aks-ctf-rg"
+export LOCATION="westus"
+export AKS_NAME="aks-ctf"
+export AKS_NODEPOOL_RG="aks-ctf-nodepool-rg"
 az group create --name $RESOURCE_GROUP --location $LOCATION
 
 ########################################
@@ -34,6 +34,7 @@ az aks create -g $RESOURCE_GROUP -n $AKS_NAME -l $LOCATION \
     --pod-cidr 192.168.0.0/16 \
     --network-plugin azure \
     --network-plugin-mode overlay \
+    --enable-addons monitoring \
     --no-ssh-key
 
 # Fetch a valid kubeconfig
